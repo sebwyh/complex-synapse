@@ -1,0 +1,10 @@
+- Equation 8.16 w/ $\alpha =1$.
+- Weight updates ~2 orders slower than input dynamics.
+- Plot traces of the projections of $\boldsymbol{u}$ and $\boldsymbol{w}$ on the first and second principal components of covariance.
+- Start with rank 1 covariance matrix. 
+- Look up: 
+  - vector definition of ellipsoid
+  - positive definite
+  - Cholesky decomposition
+  - Gram-Schmidt process
+  - 
