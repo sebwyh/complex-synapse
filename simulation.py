@@ -17,7 +17,7 @@ class Simulator:
 
         '''
 
-        log = Log(self.sigma, self.epsilon, self.T_e, self.mode, T, self.dt)
+        log = Log(neuron, self.sigma, self.epsilon, self.T_e, self.mode, T, self.dt)
 
         y = random.randn(neuron.N, 1) # principle component
         y = y / np.sqrt(y.T @ y)
@@ -28,17 +28,18 @@ class Simulator:
         neuron.W = neuron.W0
         neuron.w = neuron.W.T @ neuron.e1
 
-        for t in np.arange(0, T, self.dt):
+
+        for i in range(len(log.timeline)):
             
             if self.mode == 'block':
-                if t % self.T_e == 0:
+                if log.timeline[i] % self.T_e == 0:
                     y = random.randn(neuron.N, 1) # principal component
                     y = y / np.sqrt(y.T.dot(y))
                     orthog = random.randn(neuron.N, 1) 
                     orthog = orthog - ((orthog.T @ y).item()/(neuron.e1.T @ neuron.e1).item()) * y 
                     orthog = orthog / np.sqrt(orthog.T @ orthog)
 
-            s = self.sigma * random.randn(1, 1)
+            s = self.sigma * random.randn()
             xi = self.epsilon * random.randn(neuron.N, 1)
             u = s * y + xi
             v = u.T @ neuron.w
@@ -48,28 +49,39 @@ class Simulator:
                 ) * neuron.P @ neuron.W)
             neuron.w = neuron.W.T @ neuron.e1
 
-            log.timeline.append(t)
-            log.s.append(s)
-            log.v.append(v)
-            log.u.append(u)
-            log.y.append(y)
-            log.orthog.append(orthog)
-            log.W.append(neuron.W)
-            log.w.append(neuron.w)
-            log.w_norm.append(np.sqrt(neuron.w.T @ neuron.w))
-            log.w_para.append(neuron.w.T @ y/np.sqrt(y.T @ y))
-            log.w_orthog.append(neuron.w.T @ orthog/np.sqrt(orthog.T @ orthog))
+            log.s[i] = s
+            log.v[i] = v
+            log.u[i] = u
+            log.y[i] = y
+            log.orthog[i] = orthog
+            log.W[i] = neuron.W
+            log.w[i] = neuron.w
+            log.w_norm[i] = np.sqrt(neuron.w.T @ neuron.w).item()
+            log.w_para[i] = (neuron.w.T @ y/np.sqrt(y.T @ y)).item()
+            log.w_orthog[i] = (neuron.w.T @ orthog/np.sqrt(orthog.T @ orthog)).item()
 
-        log.s = np.array(log.s).squeeze()
-        log.v = np.array(log.v).squeeze()
-        log.u = np.array(log.u)
-        log.y = np.array(log.y)
-        log.orthog = np.array(log.orthog)
-        log.W = np.array(log.W)
-        log.w = np.array(log.w)
-        log.w_norm = np.array(log.w_norm).squeeze()
-        log.w_para = np.array(log.w_para).squeeze()
-        log.w_orthog = np.array(log.w_orthog).squeeze()
+        #     log.timeline.append(t)
+        #     log.s.append(s)
+        #     log.v.append(v)
+        #     log.u.append(u)
+        #     log.y.append(y)
+        #     log.orthog.append(orthog)
+        #     log.W.append(neuron.W)
+        #     log.w.append(neuron.w)
+        #     log.w_norm.append(np.sqrt(neuron.w.T @ neuron.w))
+        #     log.w_para.append(neuron.w.T @ y/np.sqrt(y.T @ y))
+        #     log.w_orthog.append(neuron.w.T @ orthog/np.sqrt(orthog.T @ orthog))
+
+        # log.s = np.array(log.s).squeeze()
+        # log.v = np.array(log.v).squeeze()
+        # log.u = np.array(log.u)
+        # log.y = np.array(log.y)
+        # log.orthog = np.array(log.orthog)
+        # log.W = np.array(log.W)
+        # log.w = np.array(log.w)
+        # log.w_norm = np.array(log.w_norm).squeeze()
+        # log.w_para = np.array(log.w_para).squeeze()
+        # log.w_orthog = np.array(log.w_orthog).squeeze()
 
         
         neuron.logs.append(log)

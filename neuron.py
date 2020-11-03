@@ -4,7 +4,7 @@ import numpy.random as random
 
 
 class Log:
-    def __init__(self, sigma, epsilon, T_e, mode, T, dt):
+    def __init__(self, neuron, sigma, epsilon, T_e, mode, T, dt):
         self.env_parameters = dict(
             sigma = sigma,
             epsilon = epsilon,
@@ -13,23 +13,23 @@ class Log:
             T = T,
             dt = dt
         )
-        self.timeline = []
-        self.s = []
-        self.u = []
-        self.v = []
-        self.y = []
-        self.orthog = []
-        self.W = []
-        self.w = []
-        self.w_norm = []
-        self.w_para = []
-        self.w_orthog = []
+        self.timeline = np.arange(0, T, dt)
+        length = len(self.timeline)
+        self.s = np.zeros(length)
+        self.u = np.zeros((length, neuron.N, 1))
+        self.v = np.zeros(length)
+        self.y = np.zeros((length, neuron.N, 1))
+        self.orthog = np.zeros((length, neuron.N, 1))
+        self.W = np.zeros((length, neuron.S, neuron.N))
+        self.w = np.zeros((length, neuron.N, 1))
+        self.w_norm = np.zeros(length)
+        self.w_para = np.zeros(length)
+        self.w_orthog = np.zeros(length)
 
 
     def __repr__(self):
-        return 'sigma={}, epsilon={}'.format(
-            self.env_parameters['sigma'], 
-            self.env_parameters['epsilon']
+        return '{}'.format(
+            self.env_parameters
         )
 
 
