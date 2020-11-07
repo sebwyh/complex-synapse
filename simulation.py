@@ -5,10 +5,11 @@ from neuron import Log
 
 
 class Simulator:
-    def __init__(self, sigma, epsilon, T_e, mode='block', dt=0.01):
+    def __init__(self, sigma_s, epsilon, sigma_y, T_e, mode='block', dt=0.01):
         self.dt = dt
-        self.sigma = sigma
+        self.sigma_s = sigma_s
         self.epsilon = epsilon
+        self.sigma_y = sigma_y
         self.mode = mode
         self.T_e = T_e
 
@@ -17,9 +18,18 @@ class Simulator:
 
         '''
 
-        log = Log(neuron, self.sigma, self.epsilon, self.T_e, self.mode, T, self.dt)
+        log = Log(neuron, self.sigma_s, self.epsilon, self.T_e, self.mode, T, self.dt)
 
-        y = random.randn(neuron.N, 1) # principle component
+        # y = random.randn(neuron.N, 1) # principle component
+        # y = y / np.sqrt(y.T @ y)
+        # orthog = random.randn(neuron.N, 1) 
+        # orthog = orthog - ((orthog.T @ y).item()/(y.T @ y).item()) * y # second principal component of covariance
+        # orthog = orthog / np.sqrt(orthog.T @ orthog)
+        
+        z = np.zeros((neuron.N, 1))
+        z[0,0] = 1
+        
+        y = z + self.sigma_y/np.sqrt(neuron.N-1) * np.reshape(random.multivariate_normal(np.zeros(neuron.N), np.identity(neuron.N)- z @ z.T), (neuron.N, 1)) # principle component
         y = y / np.sqrt(y.T @ y)
         orthog = random.randn(neuron.N, 1) 
         orthog = orthog - ((orthog.T @ y).item()/(y.T @ y).item()) * y # second principal component of covariance
@@ -31,15 +41,25 @@ class Simulator:
 
         for i in range(len(log.timeline)):
             
+            # if self.mode == 'block':
+            #     if log.timeline[i] % self.T_e == 0:
+            #         y = random.randn(neuron.N, 1) # principal component
+            #         y = y / np.sqrt(y.T.dot(y))
+            #         orthog = random.randn(neuron.N, 1) 
+            #         orthog = orthog - ((orthog.T @ y).item()/(neuron.e1.T @ neuron.e1).item()) * y 
+            #         orthog = orthog / np.sqrt(orthog.T @ orthog)
+
+
+
             if self.mode == 'block':
                 if log.timeline[i] % self.T_e == 0:
-                    y = random.randn(neuron.N, 1) # principal component
-                    y = y / np.sqrt(y.T.dot(y))
+                    y = z + self.sigma_y/np.sqrt(neuron.N-1) * np.reshape(random.multivariate_normal(np.zeros(neuron.N), np.identity(neuron.N)- z @ z.T), (neuron.N, 1)) # principle component
+                    y = y / np.sqrt(y.T @ y)
                     orthog = random.randn(neuron.N, 1) 
-                    orthog = orthog - ((orthog.T @ y).item()/(neuron.e1.T @ neuron.e1).item()) * y 
+                    orthog = orthog - ((orthog.T @ y).item()/(y.T @ y).item()) * y # second principal component of covariance
                     orthog = orthog / np.sqrt(orthog.T @ orthog)
 
-            s = self.sigma * random.randn()
+            s = self.sigma_s * random.randn()
             xi = self.epsilon * random.randn(neuron.N, 1)
             u = s * y + xi
             v = u.T @ neuron.w
@@ -53,6 +73,7 @@ class Simulator:
             log.v[i] = v
             log.u[i] = u
             log.y[i] = y
+            log.z[i] = z
             log.orthog[i] = orthog
             log.W[i] = neuron.W
             log.w[i] = neuron.w
@@ -85,5 +106,6 @@ class Simulator:
 
         
         neuron.logs.append(log)
+        neuron.reinitialise()
 
         return

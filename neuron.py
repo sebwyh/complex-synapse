@@ -19,6 +19,7 @@ class Log:
         self.u = np.zeros((length, neuron.N, 1))
         self.v = np.zeros(length)
         self.y = np.zeros((length, neuron.N, 1))
+        self.z = np.zeros((length, neuron.N, 1))
         self.orthog = np.zeros((length, neuron.N, 1))
         self.W = np.zeros((length, neuron.S, neuron.N))
         self.w = np.zeros((length, neuron.N, 1))
@@ -60,7 +61,7 @@ class Neuron:
                 self.L[a, a-1] = beta * (n ** (-2*(a+1) + 2))
             if a != S-1:
                 self.L[a, a+1] = beta * (n ** (-2*(a+1) + 1))
-        self.W0 = random.randn(S, N)
+        self.W0 = random.randn(S, N) / np.sqrt(N) * 0.01
         self.W = self.W0
         self.w = self.W.T @ self.e1
         self.logs = []
@@ -77,7 +78,7 @@ class Neuron:
         pass
 
     def reinitialise(self):
-        self.W0 = random.randn(self.S, self.N)
+        self.W0 = random.randn(self.S, self.N)  / np.sqrt(self.N) * 0.01
         return
 
 
