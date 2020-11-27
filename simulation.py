@@ -18,7 +18,7 @@ class Simulator:
 
         '''
 
-        log = Log(neuron, self.sigma_s, self.epsilon, self.T_e, self.mode, T, self.dt)
+        log = Log(neuron, self.sigma_s, self.epsilon, self.sigma_y, self.T_e, self.mode, T, self.dt)
 
         # y = random.randn(neuron.N, 1) # principle component
         # y = y / np.sqrt(y.T @ y)
@@ -28,8 +28,9 @@ class Simulator:
         
         z = np.zeros((neuron.N, 1))
         z[0,0] = 1
-        
-        y = z + self.sigma_y/np.sqrt(neuron.N-1) * np.reshape(random.multivariate_normal(np.zeros(neuron.N), np.identity(neuron.N)- z @ z.T), (neuron.N, 1)) # principle component
+
+        y = np.reshape(random.multivariate_normal(np.reshape(z, (neuron.N,)), (self.sigma_y ** 2)/(neuron.N-1) * (np.identity(neuron.N)- z @ z.T)), (neuron.N, 1)) # principle component
+        # y = z + self.sigma_y/np.sqrt(neuron.N-1) * np.reshape(random.multivariate_normal(np.zeros(neuron.N), np.identity(neuron.N)- z @ z.T), (neuron.N, 1)) # principle component
         y = y / np.sqrt(y.T @ y)
         orthog = random.randn(neuron.N, 1) 
         orthog = orthog - ((orthog.T @ y).item()/(y.T @ y).item()) * y # second principal component of covariance
@@ -53,7 +54,8 @@ class Simulator:
 
             if self.mode == 'block':
                 if log.timeline[i] % self.T_e == 0:
-                    y = z + self.sigma_y/np.sqrt(neuron.N-1) * np.reshape(random.multivariate_normal(np.zeros(neuron.N), np.identity(neuron.N)- z @ z.T), (neuron.N, 1)) # principle component
+                    y = np.reshape(random.multivariate_normal(np.reshape(z, (neuron.N,)), (self.sigma_y ** 2)/(neuron.N-1) * (np.identity(neuron.N)- z @ z.T)), (neuron.N, 1)) # principle component
+                    # y = z + self.sigma_y/np.sqrt(neuron.N-1) * np.reshape(random.multivariate_normal(np.zeros(neuron.N), np.identity(neuron.N)- z @ z.T), (neuron.N, 1)) # principle component
                     y = y / np.sqrt(y.T @ y)
                     orthog = random.randn(neuron.N, 1) 
                     orthog = orthog - ((orthog.T @ y).item()/(y.T @ y).item()) * y # second principal component of covariance

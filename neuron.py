@@ -4,10 +4,11 @@ import numpy.random as random
 
 
 class Log:
-    def __init__(self, neuron, sigma, epsilon, T_e, mode, T, dt):
+    def __init__(self, neuron, sigma_s, epsilon, sigma_y, T_e, mode, T, dt):
         self.env_parameters = dict(
-            sigma = sigma,
+            sigma_s = sigma_s,
             epsilon = epsilon,
+            sigma_y = sigma_y,
             T_e = T_e,
             mode = mode,
             T = T,
