@@ -82,4 +82,7 @@ class Neuron:
         self.W0 = random.randn(self.S, self.N)  / np.sqrt(self.N) * 0.01
         return
 
+    @staticmethod
+    def make_neurons():
+        return
 
