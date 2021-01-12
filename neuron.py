@@ -1,6 +1,8 @@
 import numpy as np 
 import matplotlib.pyplot as plt
 import numpy.random as random
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 
 class Log:
@@ -23,10 +25,10 @@ class Log:
         self.z = np.zeros((length, neuron.N, 1))
         self.orthog = np.zeros((length, neuron.N, 1))
         self.W = np.zeros((length, neuron.S, neuron.N))
-        self.w = np.zeros((length, neuron.N, 1))
-        self.w_norm = np.zeros(length)
-        self.w_para = np.zeros(length)
-        self.w_orthog = np.zeros(length)
+        # self.w = np.zeros((length, neuron.N, 1))
+        # self.w_norm = np.zeros(length)
+        # self.w_para = np.zeros(length)
+        # self.w_orthog = np.zeros(length)
 
 
     def __repr__(self):
@@ -78,8 +80,96 @@ class Neuron:
     def plot(self):
         pass
 
-    def reinitialise(self):
-        self.W0 = random.randn(self.S, self.N)  / np.sqrt(self.N) * 0.01
+    def reinitialise(self, scale=0.01):
+        self.W0 = random.randn(self.S, self.N)  / np.sqrt(self.N) * scale
+        return
+
+    def eigvals_L(self):
+        return np.sort(np.linalg.eigvals(self.L)) / self.tau_W
+
+    def timescales_L(self):
+        return (-1) / self.eigvals_L()
+
+    def eigvals_whole(self, log=None, C=None):
+        if not C:
+            C = log.env_parameters['sigma_s'] ** 2 * (log.y[-1] @ log.y[-1].T) + log.env_parameters['epsilon'] ** 2 * np.eye(self.N)
+
+        eigvals_C = np.sort(np.linalg.eigvals(C))[::-1]
+        chi = 1 / (np.linalg.inv(self.L)[0,0])
+
+        eigvals_sys = []
+
+        l_til = -2 * eigvals_C[0] - 3 * chi 
+        # print(l_til)
+        L = self.L + l_til * self.P
+        eigvals_sys.append(np.sort(np.linalg.eigvals(L)))
+
+        for l in eigvals_C[1:]:
+            l_til = l - eigvals_C[0] - chi
+            # print(l_til)
+            L = self.L + l_til * self.P
+            eigvals_sys.append(np.sort(np.linalg.eigvals(L)))
+
+        eigvals_sys = np.array(eigvals_sys)
+
+        return eigvals_sys / self.tau_W
+
+    def timescales_whole(self, log=None, C=None):
+        return  (-1) / self.eigvals_whole(log=log, C=C)
+
+    def eigvecs_whole(self, log=None, C=None):
+        if not C:
+            C = log.env_parameters['sigma_s'] ** 2 * (log.y[-1] @ log.y[-1].T) + log.env_parameters['epsilon'] ** 2 * np.eye(self.N)
+
+        w, v = np.linalg.eig(C)
+        eigvals_C = np.sort(w)[::-1]
+        eigvecs_C = v[:, np.argsort(w)[::-1]]
+        chi = 1 / (np.linalg.inv(self.L)[0,0])
+
+        eigvals_sys = []
+        eigvecs_sys = []
+
+        l_til = -2 * eigvals_C[0] - 3 * chi 
+        # print(l_til)
+        L = self.L + l_til * self.P
+        # eigvals_sys.append(np.sort(np.linalg.eigvals(L)))
+        w, v = np.linalg.eig(L)
+        v = v[:, np.argsort(w)]
+        eigvecs = []
+        for i in range(self.S):
+            eigvecs.append(v[:, [i]] @ eigvecs_C[:, [0]].T)
+
+        eigvecs = np.array(eigvecs)
+        eigvecs_sys.append(eigvecs)
+
+        for i, l in enumerate(eigvals_C[1:], start=1):
+            l_til = l - eigvals_C[0] - chi
+            # print(l_til)
+            L = self.L + l_til * self.P
+            eigvals_sys.append(np.sort(np.linalg.eigvals(L)))
+
+            w, v = np.linalg.eig(L)
+            v = v[:, np.argsort(w)]
+            eigvecs = []
+            for i in range(self.S):
+                eigvecs.append(v[:, [i]] @ eigvecs_C[:, [0]].T)
+
+            eigvecs = np.array(eigvecs)
+            eigvecs_sys.append(eigvecs)
+
+        eigvecs_sys = np.array(eigvecs_sys)
+
+        print(eigvecs_sys.shape)
+
+        fig, axs = plt.subplots(self.N, self.S, squeeze=True, figsize=(20, 20))
+
+        for i in range(self.N):
+            for j in range(self.S):
+                axs[i, j].imshow(eigvecs_sys[i, j, :, :], cmap=cm.Greys_r)
+
+        fig.show()
+        fig.tight_layout()
+
         return
 
     @staticmethod

@@ -13,7 +13,7 @@ class Simulator:
         self.mode = mode
         self.T_e = T_e
 
-    def run(self, neuron, T):
+    def run(self, neuron, T, avg=False):
         '''
 
         '''
@@ -35,6 +35,8 @@ class Simulator:
         orthog = random.randn(neuron.N, 1) 
         orthog = orthog - ((orthog.T @ y).item()/(y.T @ y).item()) * y # second principal component of covariance
         orthog = orthog / np.sqrt(orthog.T @ orthog)
+
+        Cu = self.sigma_s ** 2 * (y @ y.T) + self.epsilon ** 2 * (np.eye(neuron.N))
 
         neuron.W = neuron.W0
         neuron.w = neuron.W.T @ neuron.e1
@@ -61,13 +63,18 @@ class Simulator:
                     orthog = orthog - ((orthog.T @ y).item()/(y.T @ y).item()) * y # second principal component of covariance
                     orthog = orthog / np.sqrt(orthog.T @ orthog)
 
+                    Cu = self.sigma_s ** 2 * (y @ y.T) + self.epsilon ** 2 * (np.eye(neuron.N))
+
             s = self.sigma_s * random.randn()
             xi = self.epsilon * random.randn(neuron.N, 1)
             u = s * y + xi
             v = u.T @ neuron.w
-            C = u @ (u.T)
+
+            if avg == False:
+                Cu = u @ (u.T)
+            
             neuron.W += self.dt * (1/neuron.tau_W) * (
-                neuron.L @ neuron.W + neuron.P @ neuron.W @ C - neuron.alpha * np.trace(neuron.P @ neuron.W @ C @ neuron.W.T
+                neuron.L @ neuron.W + neuron.P @ neuron.W @ Cu - neuron.alpha * np.trace(neuron.P @ neuron.W @ Cu @ neuron.W.T
                 ) * neuron.P @ neuron.W)
             neuron.w = neuron.W.T @ neuron.e1
 
@@ -78,10 +85,10 @@ class Simulator:
             log.z[i] = z
             log.orthog[i] = orthog
             log.W[i] = neuron.W
-            log.w[i] = neuron.w
-            log.w_norm[i] = np.sqrt(neuron.w.T @ neuron.w).item()
-            log.w_para[i] = (neuron.w.T @ y/np.sqrt(y.T @ y)).item()
-            log.w_orthog[i] = (neuron.w.T @ orthog/np.sqrt(orthog.T @ orthog)).item()
+            # log.w[i] = neuron.w
+            # log.w_norm[i] = np.sqrt(neuron.w.T @ neuron.w).item()
+            # log.w_para[i] = (neuron.w.T @ y/np.sqrt(y.T @ y)).item()
+            # log.w_orthog[i] = (neuron.w.T @ orthog/np.sqrt(orthog.T @ orthog)).item()
 
         #     log.timeline.append(t)
         #     log.s.append(s)
