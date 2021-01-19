@@ -223,30 +223,114 @@ def plot_simple_tau_wz(neurons):
 
     return fig
 
-def plot_R_epsilon(neuron, **fixed_params):
-    fig, axs = plt.subplots(squeeze=True, figsize=(4,3))
 
-    cutoff = -0.65
+
+
+# def plot_R(neuron, parameter, cutoff=None, **fixed_params):
+#     fig, axs = plt.subplots(squeeze=True, figsize=(4,3))
+
+#     R = []
+#     parameters = []
+
+#     for log in neuron.logs:
+
+#         if type(log) == tuple:
+#             for k, v in zip(fixed_params.keys(), fixed_params.values()):
+
+#                 if log[0][k] != v:
+#                     break
+
+#             else:
+#                 parameters.append(log[0][parameter])
+#                 R.append(log[1])
+
+#         else:
+#             for k, v in zip(fixed_params.keys(), fixed_params.values()):
+
+#                 if log.env_parameters[k] != v:
+#                     break
+
+#             else:
+#                 parameters.append(log.env_parameters[parameter])
+#                 cos = (log.W[:, [0], :] @ log.y / np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)))).squeeze()
+#                 R.append(stats.pearsonr(log.v[int(cutoff*len(log.v)):] * np.sign(cos[int(cutoff * len(log.s)):]), log.s[int(cutoff * len(log.s)):])[0])
+
+def plot_R(fig, axs, neuron, parameter, cutoff=None, color=None, label=None, **fixed_params):
 
     R = []
-    epsilon = []
+    parameters = []
 
     for log in neuron.logs:
-        for k, v in zip(fixed_params.keys(), fixed_params.values()):
-            if log.env_parameters[k] != v:
-                break
-            
+
+        if type(log) == tuple:
+            for k, v in zip(fixed_params.keys(), fixed_params.values()):
+
+                if log[0][k] != v:
+                    break
+
+            else:
+                parameters.append(log[0][parameter])
+                R.append(log[1])
+
         else:
-            epsilon.append(log.env_parameters['epsilon'])
-            cos = (log.W[:, [0], :] @ log.y / np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)))).squeeze()
-            R.append(stats.pearsonr(log.v[int(cutoff*len(log.v)):] * np.sign(cos[int(cutoff * len(log.s)):]), log.s[int(cutoff * len(log.s)):])[0])
+            for k, v in zip(fixed_params.keys(), fixed_params.values()):
+
+                if log.env_parameters[k] != v:
+                    break
+
+            else:
+                parameters.append(log.env_parameters[parameter])
+                cos = (log.W[:, [0], :] @ log.y / np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)))).squeeze()
+                R.append(stats.pearsonr(log.v[int(cutoff*len(log.v)):] * np.sign(cos[int(cutoff * len(log.s)):]), log.s[int(cutoff * len(log.s)):])[0])
 
 
-    print(epsilon)
+
+    # print(parameters)
     
-    axs.plot(epsilon, R)
+    axs.plot(np.sort(np.array(parameters)), np.array(R)[np.argsort(np.array(parameters))], color=color, label=label)
 
     fig.tight_layout()
-    plt.show()
+    # plt.show()
 
-    return fig
+    return
+
+def plot_E(fig, axs, neuron, parameter, cutoff=None, color=None, label=None, **fixed_params):
+
+    E = []
+    parameters = []
+
+    for log in neuron.logs:
+
+        if type(log) == tuple:
+            for k, v in zip(fixed_params.keys(), fixed_params.values()):
+
+                if log[0][k] != v:
+                    break
+
+            else:
+                parameters.append(log[0][parameter])
+                E.append(log[2])
+
+        else:
+            for k, v in zip(fixed_params.keys(), fixed_params.values()):
+
+                if log.env_parameters[k] != v:
+                    break
+
+            else:
+                parameters.append(log.env_parameters[parameter])
+                cos = (log.W[:, [0], :] @ log.y / np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)))).squeeze()
+                d = np.minimum(1 - cos, 1 + cos)
+                E.append(np.mean(d[int(cutoff*len(d)):]))
+
+
+
+    # print(parameters)
+
+    
+    axs.plot(np.sort(np.array(parameters)), np.array(E)[np.argsort(np.array(parameters))], color=color, label=label)
+
+    fig.tight_layout()
+    # plt.show()
+
+    return

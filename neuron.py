@@ -73,7 +73,10 @@ class Neuron:
         output = 'Properties: {}.\nTrials: \n'.format(self.hyper)
         if len(self.logs) != 0:
             for i in range(len(self.logs)):
-                output += '{}: {}. \n'.format(i, self.logs[i].env_parameters)
+                if type(self.logs[i]) == tuple:
+                    output += '{}: {}. \n'.format(i, self.logs[i][0])
+                else:
+                    output += '{}: {}. \n'.format(i, self.logs[i].env_parameters)
         return output
         
     
@@ -95,7 +98,11 @@ class Neuron:
             C = log.env_parameters['sigma_s'] ** 2 * (log.y[-1] @ log.y[-1].T) + log.env_parameters['epsilon'] ** 2 * np.eye(self.N)
 
         eigvals_C = np.sort(np.linalg.eigvals(C))[::-1]
-        chi = 1 / (np.linalg.inv(self.L)[0,0])
+
+        if self.L == np.array([[0]]):
+            chi = 0
+        else:
+            chi = 1 / (np.linalg.inv(self.L)[0,0])
 
         eigvals_sys = []
 

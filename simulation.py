@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import numpy.random as random
 from neuron import Log
+import scipy.stats as stats
 
 
 class Simulator:
@@ -13,7 +14,7 @@ class Simulator:
         self.mode = mode
         self.T_e = T_e
 
-    def run(self, neuron, T, avg=False):
+    def run(self, neuron, T, avg=False, summary=False, cutoff=None):
         '''
 
         '''
@@ -52,8 +53,6 @@ class Simulator:
             #         orthog = orthog - ((orthog.T @ y).item()/(neuron.e1.T @ neuron.e1).item()) * y 
             #         orthog = orthog / np.sqrt(orthog.T @ orthog)
 
-
-
             if self.mode == 'block':
                 if log.timeline[i] % self.T_e == 0:
                     y = np.reshape(random.multivariate_normal(np.reshape(z, (neuron.N,)), (self.sigma_y ** 2)/(neuron.N-1) * (np.identity(neuron.N)- z @ z.T)), (neuron.N, 1)) # principle component
@@ -90,31 +89,17 @@ class Simulator:
             # log.w_para[i] = (neuron.w.T @ y/np.sqrt(y.T @ y)).item()
             # log.w_orthog[i] = (neuron.w.T @ orthog/np.sqrt(orthog.T @ orthog)).item()
 
-        #     log.timeline.append(t)
-        #     log.s.append(s)
-        #     log.v.append(v)
-        #     log.u.append(u)
-        #     log.y.append(y)
-        #     log.orthog.append(orthog)
-        #     log.W.append(neuron.W)
-        #     log.w.append(neuron.w)
-        #     log.w_norm.append(np.sqrt(neuron.w.T @ neuron.w))
-        #     log.w_para.append(neuron.w.T @ y/np.sqrt(y.T @ y))
-        #     log.w_orthog.append(neuron.w.T @ orthog/np.sqrt(orthog.T @ orthog))
-
-        # log.s = np.array(log.s).squeeze()
-        # log.v = np.array(log.v).squeeze()
-        # log.u = np.array(log.u)
-        # log.y = np.array(log.y)
-        # log.orthog = np.array(log.orthog)
-        # log.W = np.array(log.W)
-        # log.w = np.array(log.w)
-        # log.w_norm = np.array(log.w_norm).squeeze()
-        # log.w_para = np.array(log.w_para).squeeze()
-        # log.w_orthog = np.array(log.w_orthog).squeeze()
-
         
-        neuron.logs.append(log)
+        if summary:
+            cos = (log.W[:, [0], :] @ log.y / np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)))).squeeze()
+            d = np.minimum(1 - cos, 1 + cos)
+            E = np.mean(d[int(cutoff*len(d)):])
+            R = stats.pearsonr(log.v[int(cutoff*len(log.v)):] * np.sign(cos[int(cutoff * len(log.s)):]), log.s[int(cutoff * len(log.s)):])[0]
+            neuron.logs.append((log.env_parameters, R, E))
+
+        else:
+            neuron.logs.append(log)
+        
         neuron.reinitialise()
 
         return
