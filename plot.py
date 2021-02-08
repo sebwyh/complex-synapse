@@ -50,7 +50,7 @@ def env_extract(neuron):
 
 def tag_R_E(ax, log, x_low, x_up):
     cutoff = -0.65
-    cos = (log.W[:, [0], :] @ log.y / np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)))).squeeze()
+    cos = (log.W[:, [0], :] @ log.y / (np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)) * np.sqrt(np.transpose(log.y, (0,2,1)) @ log.y)))).squeeze()
     d = np.minimum(1 - cos, 1 + cos)
     E = np.mean(d[int(cutoff*len(d)):])
     R = stats.pearsonr(log.v[int(cutoff*len(log.v)):] * np.sign(cos[int(cutoff * len(log.s)):]), log.s[int(cutoff * len(log.s)):])[0]
@@ -81,7 +81,7 @@ def plot_wz_align(neuron):
         for k in np.arange(0, neuron.S, 1):
             axs[i, j].plot(
                 log.timeline, 
-                (log.W[:, [k], :] @ log.z / np.sqrt(log.W[:, [k], :] @ np.transpose(log.W[:, [k], :], (0,2,1)))).squeeze(), 
+                (log.W[:, [k], :] @ log.z / (np.sqrt(log.W[:, [k], :] @ np.transpose(log.W[:, [k], :], (0,2,1))) * np.sqrt(np.transpose(log.z, (0,2,1)) @ log.z))).squeeze(), 
                 color = colors[k],
                 label = '$\mathbf{{w}}_{{{k}}}$'.format(k=k+1)
             )
@@ -118,7 +118,7 @@ def plot_wy_align(neuron, blocks=(0,3)):
         for k in np.arange(0, neuron.S, 1):
             axs[i, j].plot(
                 log.timeline, 
-                (log.W[:, [k], :] @ log.y / np.sqrt(log.W[:, [k], :] @ np.transpose(log.W[:, [k], :], (0,2,1)))).squeeze(), 
+                (log.W[:, [k], :] @ log.y / (np.sqrt(log.W[:, [k], :] @ np.transpose(log.W[:, [k], :], (0,2,1))) * np.sqrt(np.transpose(log.y, (0,2,1)) @ log.y))).squeeze(), 
                 color = colors[k],
                 label = '$\mathbf{{w}}_{{{k}}}$'.format(k=k+1)
             )
@@ -160,7 +160,7 @@ def plot_simple_tau_wy(neurons, blocks=(0,3)):
 
             axs[i, j].plot(
                 log.timeline, 
-                (log.W[:, [0], :] @ log.y / np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)))).squeeze(), 
+                (log.W[:, [0], :] @ log.y / (np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1))) * np.sqrt(np.transpose(log.y, (0,2,1)) @ log.y))).squeeze(), 
                 color = colors[k],
                 label = '$\\tau_{{W}} = {}$'.format(neuron.hyper['tau_W'])
             )
@@ -202,7 +202,7 @@ def plot_simple_tau_wz(neurons):
 
             axs[i, j].plot(
                 log.timeline, 
-                (log.W[:, [0], :] @ log.z / np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)))).squeeze(), 
+                (log.W[:, [0], :] @ log.z / (np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1))) * np.sqrt(np.transpose(log.z, (0,2,1)) @ log.z))).squeeze(), 
                 color = colors[k],
                 label = '$\\tau_{{W}} = {}$'.format(neuron.hyper['tau_W'])
             )
@@ -323,12 +323,100 @@ def plot_E(fig, axs, neuron, parameter, cutoff=None, color=None, label=None, **f
                 d = np.minimum(1 - cos, 1 + cos)
                 E.append(np.mean(d[int(cutoff*len(d)):]))
 
-
-
     # print(parameters)
 
     
     axs.plot(np.sort(np.array(parameters)), np.array(E)[np.argsort(np.array(parameters))], color=color, label=label)
+
+    fig.tight_layout()
+    # plt.show()
+
+    return
+
+
+def plot_E_average(fig, axs, neuron, parameter, cutoff=None, color=None, label=None):
+
+    parameters = []
+
+    for log in neuron.logs:
+        
+        if type(log) == tuple:
+
+            if log[0][parameter] not in parameters:
+                parameters.append(log[0][parameter])
+        else:
+            if log.env_parameters[parameter] not in parameters:
+                parameters.append(log.env_parameters[parameter])
+
+    parameters = np.sort(np.array(parameters))
+
+    # print(parameters)
+
+    E = [ [] for _ in range(len(parameters)) ]
+
+    for log in neuron.logs:
+        
+        if type(log) == tuple:
+            # print(np.where(parameters==log[0][parameter]))
+            E[np.where(parameters==log[0][parameter])[0][0]].append(log[2])
+
+        else:
+            cos = (log.W[:, [0], :] @ log.y / np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)))).squeeze()
+            d = np.minimum(1 - cos, 1 + cos)
+        
+            E[np.where(parameters==log.env_parameters[parameter])[0][0]].append(np.mean(d[int(cutoff*len(d)):]))
+    
+    E = np.mean(np.array(E), axis=1).squeeze()
+    
+    if not label: label='$\\tau_w={}$'.format(neuron.tau_W)
+    axs.plot(parameters, np.array(E)[np.argsort(np.array(parameters))], color=color, label=label)
+
+    fig.tight_layout()
+    # plt.show()
+
+    return
+
+
+def plot_E_best(fig, axs, neurons, parameter, cutoff=None, color=None, label=None, **fixed_params):
+
+    EE = []
+    
+    for neuron in neurons:
+        E = []
+        parameters = []
+
+        for log in neuron.logs:
+
+            if type(log) == tuple:
+                for k, v in zip(fixed_params.keys(), fixed_params.values()):
+
+                    if log[0][k] != v:
+                        break
+
+                else:
+                    parameters.append(log[0][parameter])
+                    E.append(log[2])
+
+            else:
+                for k, v in zip(fixed_params.keys(), fixed_params.values()):
+
+                    if log.env_parameters[k] != v:
+                        break
+
+                else:
+                    parameters.append(log.env_parameters[parameter])
+                    cos = (log.W[:, [0], :] @ log.y / np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)))).squeeze()
+                    d = np.minimum(1 - cos, 1 + cos)
+                    E.append(np.mean(d[int(cutoff*len(d)):]))
+
+        E = np.array(E)[np.argsort(np.array(parameters))]
+        EE.append(E)
+
+    # print(parameters)
+
+    EE = np.array(EE)
+    
+    axs.plot(np.sort(np.array(parameters)), np.min(EE, axis=0), "--", color=color, label=label)
 
     fig.tight_layout()
     # plt.show()
