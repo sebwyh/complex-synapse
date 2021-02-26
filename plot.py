@@ -34,11 +34,11 @@ def env_extract(neuron):
     sigma_s = []
     epsilon = []
     sigma_y = []
-    T_e = []
+    tau_y = []
 
     for log in neuron.logs:
-        if log.env_parameters['T_e'] not in T_e:
-            T_e.append(log.env_parameters['T_e']) 
+        if log.env_parameters['tau_y'] not in tau_y:
+            tau_y.append(log.env_parameters['tau_y']) 
         if log.env_parameters['sigma_s'] not in sigma_s:
             sigma_s.append(log.env_parameters['sigma_s']) 
         if log.env_parameters['sigma_y'] not in sigma_y:
@@ -46,10 +46,10 @@ def env_extract(neuron):
         if log.env_parameters['epsilon'] not in epsilon:
             epsilon.append(log.env_parameters['epsilon']) 
     
-    return sigma_s, epsilon, sigma_y, T_e
+    return sigma_s, epsilon, sigma_y, tau_y
 
 def tag_R_E(ax, log, x_low, x_up):
-    cutoff = -0.65
+    cutoff = -0.6
     cos = (log.W[:, [0], :] @ log.y / (np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)) * np.sqrt(np.transpose(log.y, (0,2,1)) @ log.y)))).squeeze()
     d = np.minimum(1 - cos, 1 + cos)
     E = np.mean(d[int(cutoff*len(d)):])
@@ -66,15 +66,15 @@ def tag_R_E(ax, log, x_low, x_up):
 
 def plot_wz_align(neuron):
 
-    sigma_s, epsilon, sigma_y, T_e = env_extract(neuron)
+    sigma_s, epsilon, sigma_y, tau_y = env_extract(neuron)
 
     cm_section = np.linspace(0.3, 1, neuron.S)
     colors = [ cm.Oranges(x) for x in cm_section ]
 
-    fig, axs = plt.subplots(len(T_e), len(epsilon), squeeze=True, figsize=(4*len(epsilon),3*len(T_e)), sharey=True)
+    fig, axs = plt.subplots(len(tau_y), len(epsilon), squeeze=True, figsize=(4*len(epsilon),3*len(tau_y)), sharey=True)
 
     for log in neuron.logs:
-        i = T_e.index(log.env_parameters['T_e'])
+        i = tau_y.index(log.env_parameters['tau_y'])
         j = epsilon.index(log.env_parameters['epsilon'])
         x_low = 0
         x_up = log.timeline[-1]+1
@@ -86,7 +86,7 @@ def plot_wz_align(neuron):
                 label = '$\mathbf{{w}}_{{{k}}}$'.format(k=k+1)
             )
             axs[i, j].set_xlabel('$t$', fontsize=14)
-            axs[i, j].set_title('$T_e = {}$, $\epsilon = {}$'.format(T_e[i], epsilon[j]))
+            axs[i, j].set_title('$\\tau_y = {}$, $\epsilon = {}$'.format(tau_y[i], epsilon[j]))
         
         tag_R_E(axs[i, j], log, x_low, x_up)
         
@@ -103,18 +103,18 @@ def plot_wz_align(neuron):
 
 def plot_wy_align(neuron, blocks=(0,3)):
 
-    sigma_s, epsilon, sigma_y, T_e = env_extract(neuron)
+    sigma_s, epsilon, sigma_y, tau_y = env_extract(neuron)
 
     cm_section = np.linspace(0.3, 1, neuron.S)
     colors = [ cm.Oranges(x) for x in cm_section ]
 
-    fig, axs = plt.subplots(len(T_e), len(epsilon), squeeze=True, figsize=(4*len(epsilon),3*len(T_e)), sharey=True)
+    fig, axs = plt.subplots(len(tau_y), len(epsilon), squeeze=True, figsize=(4*len(epsilon),3*len(tau_y)), sharey=True)
 
     for log in neuron.logs:
-        i = T_e.index(log.env_parameters['T_e'])
+        i = tau_y.index(log.env_parameters['tau_y'])
         j = epsilon.index(log.env_parameters['epsilon'])
-        x_low = blocks[0] * T_e[i]
-        x_up = blocks[1] * T_e[i]
+        x_low = blocks[0] * tau_y[i]
+        x_up = blocks[1] * tau_y[i]
         for k in np.arange(0, neuron.S, 1):
             axs[i, j].plot(
                 log.timeline, 
@@ -123,7 +123,7 @@ def plot_wy_align(neuron, blocks=(0,3)):
                 label = '$\mathbf{{w}}_{{{k}}}$'.format(k=k+1)
             )
             axs[i, j].set_xlabel('$t$', fontsize=14)
-            axs[i, j].set_title('$T_e = {}$, $\epsilon = {}$'.format(T_e[i], epsilon[j]))
+            axs[i, j].set_title('$\\tau_y = {}$, $\epsilon = {}$'.format(tau_y[i], epsilon[j]))
         
         tag_R_E(axs[i, j], log, x_low, x_up)
         
@@ -141,22 +141,22 @@ def plot_wy_align(neuron, blocks=(0,3)):
 
 def plot_simple_tau_wy(neurons, blocks=(0,3)):
 
-    sigma_s, epsilon, sigma_y, T_e = env_extract(neurons[0])
+    sigma_s, epsilon, sigma_y, tau_y = env_extract(neurons[0])
 
     N, S, tau_W, beta, n, alpha = neuron_extract(neurons)
 
     cm_section = np.linspace(0.4, 1, len(tau_W))
     colors = [ cm.Blues(x) for x in cm_section ]
 
-    fig, axs = plt.subplots(len(T_e), len(epsilon), squeeze=True, figsize=(4*len(epsilon),3*len(T_e)), sharey=True)
+    fig, axs = plt.subplots(len(tau_y), len(epsilon), squeeze=True, figsize=(4*len(epsilon),3*len(tau_y)), sharey=True)
 
     for k, neuron in enumerate(neurons):
 
         for log in neuron.logs:
-            i = T_e.index(log.env_parameters['T_e'])
+            i = tau_y.index(log.env_parameters['tau_y'])
             j = epsilon.index(log.env_parameters['epsilon'])
-            x_low = blocks[0] * T_e[i]
-            x_up = blocks[1] * T_e[i]
+            x_low = blocks[0] * tau_y[i]
+            x_up = blocks[1] * tau_y[i]
 
             axs[i, j].plot(
                 log.timeline, 
@@ -167,7 +167,7 @@ def plot_simple_tau_wy(neurons, blocks=(0,3)):
 
             if k == 0:
                 axs[i, j].set_xlabel('$t$', fontsize=14)
-                axs[i, j].set_title('$T_e = {}$, $\epsilon = {}$'.format(T_e[i], epsilon[j]))
+                axs[i, j].set_title('$\\tau_y = {}$, $\epsilon = {}$'.format(tau_y[i], epsilon[j]))
                 
                 axs[i, j].set_xlim(x_low, x_up)
 
@@ -183,19 +183,19 @@ def plot_simple_tau_wy(neurons, blocks=(0,3)):
 
 def plot_simple_tau_wz(neurons):
 
-    sigma_s, epsilon, sigma_y, T_e = env_extract(neurons[0])
+    sigma_s, epsilon, sigma_y, tau_y = env_extract(neurons[0])
 
     N, S, tau_W, beta, n, alpha = neuron_extract(neurons)
 
     cm_section = np.linspace(0.4, 1, len(tau_W))
     colors = [ cm.Blues(x) for x in cm_section ]
 
-    fig, axs = plt.subplots(len(T_e), len(epsilon), squeeze=True, figsize=(4*len(epsilon),3*len(T_e)), sharey=True)
+    fig, axs = plt.subplots(len(tau_y), len(epsilon), squeeze=True, figsize=(4*len(epsilon),3*len(tau_y)), sharey=True)
 
     for k, neuron in enumerate(neurons):
 
         for log in neuron.logs:
-            i = T_e.index(log.env_parameters['T_e'])
+            i = tau_y.index(log.env_parameters['tau_y'])
             j = epsilon.index(log.env_parameters['epsilon'])
             x_low = 0
             x_up = log.timeline[-1]+1
@@ -209,7 +209,7 @@ def plot_simple_tau_wz(neurons):
 
             if k == 0:
                 axs[i, j].set_xlabel('$t$', fontsize=14)
-                axs[i, j].set_title('$T_e = {}$, $\epsilon = {}$'.format(T_e[i], epsilon[j]))
+                axs[i, j].set_title('$\\tau_y = {}$, $\epsilon = {}$'.format(tau_y[i], epsilon[j]))
                 
                 axs[i, j].set_xlim(x_low, x_up)
 
@@ -294,7 +294,7 @@ def plot_R(fig, axs, neuron, parameter, cutoff=None, color=None, label=None, **f
 
     return
 
-def plot_E(fig, axs, neuron, parameter, cutoff=None, color=None, label=None, **fixed_params):
+def plot_E(fig, axs, neuron, parameter, cutoff=None, color=None, style='-', label=None, **fixed_params):
 
     E = []
     parameters = []
@@ -326,12 +326,181 @@ def plot_E(fig, axs, neuron, parameter, cutoff=None, color=None, label=None, **f
     # print(parameters)
 
     
-    axs.plot(np.sort(np.array(parameters)), np.array(E)[np.argsort(np.array(parameters))], color=color, label=label)
+    axs.plot(np.sort(np.array(parameters)), np.array(E)[np.argsort(np.array(parameters))], style, color=color, label=label)
 
     fig.tight_layout()
     # plt.show()
 
     return
+
+def plot_cm_E_abs(fig, axs, neuron, cutoff=None, color=None, style='-', label=None, **fixed_params):
+
+    '''different rows: different epsilon values; different columns: different tau_y values'''
+
+    epsilons = []
+    tau_ys = []
+
+
+    # make two lists first, one of all epsilon values, one of all tau_y values
+    for log in neuron.logs:
+
+        if type(log) == tuple:
+            for k, v in zip(fixed_params.keys(), fixed_params.values()):
+
+                if log[0][k] != v:
+                    break
+
+            else:
+
+                if log[0]['epsilon'] not in epsilons:
+
+                    epsilons.append(log[0]['epsilon'])
+                
+                if log[0]['tau_y'] not in tau_ys:
+                    tau_ys.append(log[0]['tau_y'])
+
+        else:
+
+            for k, v in zip(fixed_params.keys(), fixed_params.values()):
+
+                if log.env_parameters[k] != v:
+                    break
+
+            else:
+
+                if log.env_parameters['epsilon'] not in epsilons:
+
+                    epsilons.append(log.env_parameters['epsilon'])
+                
+                if log.env_parameters['tau_y'] not in tau_ys:
+                
+                    tau_ys.append(log.env_parameters['tau_y'])
+
+
+    # print(parameters)
+
+    E = np.zeros((len(epsilons), len(tau_ys)))
+
+    for log in neuron.logs:
+        
+        if type(log) == tuple:
+
+            E[epsilons.index(log[0]['epsilon']), tau_ys.index(log[0]['tau_y'])] = log[2]
+
+        else:
+
+            cos = (log.W[:, [0], :] @ log.y / np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)))).squeeze()
+            d = np.minimum(1 - cos, 1 + cos)
+            E[epsilons.index(log.env_parameters['epsilon']), tau_ys.index(log.env_parameters['tau_y'])] = np.mean(d[int(cutoff*len(d)):])
+            
+    # print(E.shape)
+    # print(E)
+
+    im = axs.imshow(E, cmap=cm.binary)
+    im.set_clim(0, 1)
+    axs.set_xlabel('$\\tau_y$')
+    axs.set_ylabel('$\epsilon$')
+    axs.set_xticks(np.arange(len(tau_ys)))
+    axs.set_xticklabels(tau_ys)
+    axs.set_yticks(np.arange(len(epsilons)))
+    axs.set_yticklabels(epsilons)
+    axs.set_title('$E$ (complex model)')
+
+
+    fig.tight_layout()
+    # plt.show()
+
+    return im
+
+def plot_cm_E_diff(fig, axs, neuron1, neuron2, cutoff=None, color=None, style='-', label=None, **fixed_params):
+
+    '''Different rows: different epsilon values; different columns: different tau_y values. neuron1 is the benchmark'''
+
+    epsilons = []
+    tau_ys = []
+
+
+    # make two lists first, one of all epsilon values, one of all tau_y values
+    for log in neuron1.logs:
+
+        if type(log) == tuple:
+            for k, v in zip(fixed_params.keys(), fixed_params.values()):
+
+                if log[0][k] != v:
+                    break
+
+            else:
+
+                if log[0]['epsilon'] not in epsilons:
+
+                    epsilons.append(log[0]['epsilon'])
+                
+                if log[0]['tau_y'] not in tau_ys:
+                    tau_ys.append(log[0]['tau_y'])
+
+        else:
+
+            for k, v in zip(fixed_params.keys(), fixed_params.values()):
+
+                if log.env_parameters[k] != v:
+                    break
+
+            else:
+
+                if log.env_parameters['epsilon'] not in epsilons:
+
+                    epsilons.append(log.env_parameters['epsilon'])
+                
+                if log.env_parameters['tau_y'] not in tau_ys:
+                
+                    tau_ys.append(log.env_parameters['tau_y'])
+
+
+    E = np.zeros((len(epsilons), len(tau_ys)))
+
+    for log in neuron2.logs:
+        
+        if type(log) == tuple:
+
+            E[epsilons.index(log[0]['epsilon']), tau_ys.index(log[0]['tau_y'])] = log[2]
+
+        else:
+
+            cos = (log.W[:, [0], :] @ log.y / np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)))).squeeze()
+            d = np.minimum(1 - cos, 1 + cos)
+            E[epsilons.index(log.env_parameters['epsilon']), tau_ys.index(log.env_parameters['tau_y'])] = np.mean(d[int(cutoff*len(d)):])
+
+    for log in neuron1.logs:
+        
+        if type(log) == tuple:
+
+            E[epsilons.index(log[0]['epsilon']), tau_ys.index(log[0]['tau_y'])] -= log[2]
+
+        else:
+
+            cos = (log.W[:, [0], :] @ log.y / np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)))).squeeze()
+            d = np.minimum(1 - cos, 1 + cos)
+            E[epsilons.index(log.env_parameters['epsilon']), tau_ys.index(log.env_parameters['tau_y'])] -= np.mean(d[int(cutoff*len(d)):])
+            
+    # print(E.shape)
+    # print(E)
+
+    im = axs.imshow(E, cmap=cm.bwr)
+    im.set_clim(-0.6, 0.6)
+    axs.set_xlabel('$\\tau_y$')
+    axs.set_ylabel('$\epsilon$')
+    axs.set_xticks(np.arange(len(tau_ys)))
+    axs.set_xticklabels(tau_ys)
+    axs.set_yticks(np.arange(len(epsilons)))
+    axs.set_yticklabels(epsilons)
+    axs.set_title("$\Delta E$ ($\\tau_W = {}$)".format(neuron2.hyper['tau_W']))
+
+
+    fig.tight_layout()
+    # plt.show()
+
+    return im
+
 
 
 def plot_E_average(fig, axs, neuron, parameter, cutoff=None, color=None, label=None):

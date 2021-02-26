@@ -6,12 +6,14 @@ import matplotlib.cm as cm
 
 
 class Log:
-    def __init__(self, neuron, sigma_s, epsilon, sigma_y, T_e, mode, T, dt):
+    def __init__(self, neuron, sigma_s, epsilon, sigma_y, tau_u, tau_y, tau_z, mode, T, dt):
         self.env_parameters = dict(
             sigma_s = sigma_s,
             epsilon = epsilon,
             sigma_y = sigma_y,
-            T_e = T_e,
+            tau_u = tau_u,
+            tau_y = tau_y,
+            tau_z = tau_z,
             mode = mode,
             T = T,
             dt = dt
@@ -38,12 +40,13 @@ class Log:
 
 
 class Neuron:
-    def __init__(self, N, S, tau_W, beta, n=2, alpha=1):
+    def __init__(self, N, S, tau_W, beta, gamma=1, n=2, alpha=1):
         self.hyper = dict(
             N = N,
             S = S,
             tau_W = tau_W,
             beta = beta,
+            gamma = gamma,
             n = n,
             alpha = alpha
         )
@@ -55,6 +58,7 @@ class Neuron:
         self.tau_W = tau_W
         self.alpha = alpha
         self.beta = beta
+        self.gamma = gamma
         self.L = np.zeros((S, S))
         for a in range(S):
             self.L[a, a] = -beta * (n ** (-2*(a+1) + 1) * (n + 1))
@@ -99,8 +103,11 @@ class Neuron:
 
         eigvals_C = np.sort(np.linalg.eigvals(C))[::-1]
 
-        if self.L == np.array([[0]]):
-            chi = 0
+        if self.L.shape == (1, 1):
+            if self.L == np.array([[0]]):
+                chi = 0
+            else:
+                chi = 1 / (np.linalg.inv(self.L)[0,0])
         else:
             chi = 1 / (np.linalg.inv(self.L)[0,0])
 
