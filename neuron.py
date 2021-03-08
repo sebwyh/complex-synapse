@@ -40,14 +40,15 @@ class Log:
 
 
 class Neuron:
-    def __init__(self, N, S, tau_W, beta, gamma=1, n=2, alpha=1):
+    def __init__(self, N, S, tau_W, beta, gamma=1, n_C=2, n_g=2, alpha=1):
         self.hyper = dict(
             N = N,
             S = S,
             tau_W = tau_W,
             beta = beta,
             gamma = gamma,
-            n = n,
+            n_C = n_C,
+            n_g = n_g,
             alpha = alpha
         )
         self.e1 = np.zeros((S, 1))
@@ -61,13 +62,24 @@ class Neuron:
         self.gamma = gamma
         self.L = np.zeros((S, S))
         for a in range(S):
-            self.L[a, a] = -beta * (n ** (-2*(a+1) + 1) * (n + 1))
+            self.L[a, a] = -beta * ((n_C * n_g) ** (-(a+1)) * n_C * (n_g + 1))
             if a == 0:
-                self.L[a, a] = -beta * (n ** (-2*(a+1) + 1))
+                self.L[a, a] = -beta * ((n_C * n_g) ** (-(a+1)) * n_C)
             if a != 0:
-                self.L[a, a-1] = beta * (n ** (-2*(a+1) + 2))
+                self.L[a, a-1] = gamma * beta * ((n_C * n_g) ** (-(a+1) + 1))
             if a != S-1:
-                self.L[a, a+1] = beta * (n ** (-2*(a+1) + 1))
+                self.L[a, a+1] = gamma * beta * ((n_C ** (-2*(a+1) + 1)))
+
+        '''Original Benna-Fusi model'''
+        # for a in range(S):
+        #     self.L[a, a] = -beta * (n_C ** (-2*(a+1) + 1) * (n_C + 1))
+        #     if a == 0:
+        #         self.L[a, a] = -beta * (n_C ** (-2*(a+1) + 1))
+        #     if a != 0:
+        #         self.L[a, a-1] = gamma * beta * (n_C ** (-2*(a+1) + 2))
+        #     if a != S-1:
+        #         self.L[a, a+1] = gamma * beta * (n_C ** (-2*(a+1) + 1))
+
         self.W0 = random.randn(S, N) / np.sqrt(N) * 0.01
         self.W = self.W0
         self.w = self.W.T @ self.e1
