@@ -56,10 +56,10 @@ class Simulator:
 
         s = self.sigma_s * random.randn()
         xi = self.epsilon * random.randn(neuron.N, 1)
-        u = s * y + xi        
+        u = s * y + xi
 
         neuron.W = neuron.W0
-        neuron.w = neuron.W.T @ neuron.e1
+        neuron.w = neuron.W.T @ neuron.p
 
         next_u = 0
         next_y = 0
@@ -191,14 +191,25 @@ class Simulator:
             v = u.T @ neuron.w
             # print(np.sqrt(v.T @ v))
 
+            dW = neuron.L @ neuron.W
             if avg == False:
-                Cu = u @ (u.T)
-            
-            neuron.W += self.dt * (1/neuron.tau_W) * (
-                neuron.L @ neuron.W + neuron.P @ neuron.W @ Cu - neuron.alpha * np.trace(neuron.P @ neuron.W @ Cu @ neuron.W.T
-                ) * neuron.P @ neuron.W)
-            neuron.w = neuron.W.T @ neuron.e1
+                dW[[0],:] += v * u.T - neuron.alpha * v**2 * neuron.w.T
+            else:
+                dW[[0], :] += neuron.w.T @ Cu - neuron.alpha * (neuron.w.T @ Cu @ neuron.w) * neuron.w.T
 
+            neuron.W += self.dt * (1/neuron.tau_W) * dW
+            neuron.w = neuron.W.T @ neuron.p
+
+            # if avg == False:
+            #     Cu = u @ (u.T)
+            
+            # neuron.W += self.dt * (1/neuron.tau_W) * (
+            #     neuron.L @ neuron.W + neuron.P @ neuron.W @ Cu - neuron.alpha * np.trace(neuron.P @ neuron.W @ Cu @ neuron.W.T
+            #     ) * neuron.P @ neuron.W)
+            # neuron.w = neuron.W.T @ neuron.e1
+
+            
+            
             # print(neuron.w.T)
             # print(neuron.L @ neuron.W)
             # print(neuron.P @ neuron.W @ Cu)
@@ -228,6 +239,7 @@ class Simulator:
             cos = (log.W[:, [0], :] @ log.y / np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)))).squeeze()
             d = np.minimum(1 - cos, 1 + cos)
             E = np.mean(d[int(cutoff*len(d)):])
+            E_naive = np.mean(1-(np.transpose(log.z, (0,2,1)) @ log.y).squeeze())
             # if np.isnan(log.v).any() or np.isinf(log.v).any():
             #     print('v')
             #     print(log.v)
@@ -239,7 +251,7 @@ class Simulator:
             #     print('s')
             #     print(log.s)
             R = stats.pearsonr(log.v[int(cutoff*len(log.v)):] * np.sign(cos[int(cutoff * len(log.s)):]), log.s[int(cutoff * len(log.s)):])[0]
-            neuron.logs.append((log.env_parameters, R, E))
+            neuron.logs.append((log.env_parameters, R, E, E_naive))
 
         else:
             neuron.logs.append(log)

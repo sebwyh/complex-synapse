@@ -412,6 +412,96 @@ def plot_cm_E_abs(fig, axs, neuron, cutoff=None, color=None, style='-', label=No
 
     return im
 
+def plot_cm_E_minus_reference(fig, axs, neuron, ref=None, cutoff=None, color=None, style='-', label=None, **fixed_params):
+
+    '''different rows: different epsilon values; different columns: different tau_y values'''
+
+    epsilons = []
+    tau_ys = []
+
+
+    # make two lists first, one of all epsilon values, one of all tau_y values
+    for log in neuron.logs:
+
+
+        if type(log) == tuple:
+
+            for k, v in zip(fixed_params.keys(), fixed_params.values()):
+
+                if log[0][k] != v:
+                    break
+
+            else:
+
+                if log[0]['epsilon'] not in epsilons:
+
+                    epsilons.append(log[0]['epsilon'])
+                
+                if log[0]['tau_y'] not in tau_ys:
+
+                    tau_ys.append(log[0]['tau_y'])
+
+        else:
+
+            ref = np.mean(1-(np.transpose(log.z, (0,2,1)) @ log.y).squeeze())
+
+            for k, v in zip(fixed_params.keys(), fixed_params.values()):
+
+                if log.env_parameters[k] != v:
+                    break
+
+            else:
+
+                if log.env_parameters['epsilon'] not in epsilons:
+
+                    epsilons.append(log.env_parameters['epsilon'])
+                
+                if log.env_parameters['tau_y'] not in tau_ys:
+                
+                    tau_ys.append(log.env_parameters['tau_y'])
+
+
+    # print(parameters)
+
+    E = np.zeros((len(epsilons), len(tau_ys)))
+
+    for log in neuron.logs:
+        
+        if type(log) == tuple:
+
+            if len(log) > 3:
+                
+                ref = log[3]
+
+            E[epsilons.index(log[0]['epsilon']), tau_ys.index(log[0]['tau_y'])] = log[2] - ref
+
+        else:
+
+            ref = np.mean(1-(np.transpose(log.z, (0,2,1)) @ log.y).squeeze())
+
+            cos = (log.W[:, [0], :] @ log.y / np.sqrt(log.W[:, [0], :] @ np.transpose(log.W[:, [0], :], (0,2,1)))).squeeze()
+            d = np.minimum(1 - cos, 1 + cos)
+            E[epsilons.index(log.env_parameters['epsilon']), tau_ys.index(log.env_parameters['tau_y'])] = np.mean(d[int(cutoff*len(d)):]) - ref
+            
+    # print(E.shape)
+    # print(E)
+
+    im = axs.imshow(E, cmap=cm.bwr)
+    im.set_clim(-0.7, 0.7)
+    axs.set_xlabel('$\\tau_y$')
+    axs.set_ylabel('$\epsilon$')
+    axs.set_xticks(np.arange(len(tau_ys)))
+    axs.set_xticklabels(tau_ys)
+    axs.set_yticks(np.arange(len(epsilons)))
+    axs.set_yticklabels(epsilons)
+    axs.set_title('$E-E_0$ (complex model)')
+
+
+    fig.tight_layout()
+    # plt.show()
+
+    return im
+
 def plot_cm_E_diff(fig, axs, neuron1, neuron2, cutoff=None, color=None, style='-', label=None, **fixed_params):
 
     '''Different rows: different epsilon values; different columns: different tau_y values. neuron1 is the benchmark'''
@@ -486,21 +576,20 @@ def plot_cm_E_diff(fig, axs, neuron1, neuron2, cutoff=None, color=None, style='-
     # print(E)
 
     im = axs.imshow(E, cmap=cm.bwr)
-    im.set_clim(-0.6, 0.6)
+    im.set_clim(-0.7, 0.7)
     axs.set_xlabel('$\\tau_y$')
     axs.set_ylabel('$\epsilon$')
     axs.set_xticks(np.arange(len(tau_ys)))
     axs.set_xticklabels(tau_ys)
     axs.set_yticks(np.arange(len(epsilons)))
     axs.set_yticklabels(epsilons)
-    axs.set_title("$\Delta E$ ($\\tau_W = {}$)".format(neuron2.hyper['tau_W']))
+    axs.set_title("$\Delta E$, $\Delta\\bar{{E}}={:0.3f}$ ($\\tau_W = {}$)".format(np.mean(E), neuron2.hyper['tau_W']))
 
 
     fig.tight_layout()
     # plt.show()
 
     return im
-
 
 
 def plot_E_average(fig, axs, neuron, parameter, cutoff=None, color=None, label=None):

@@ -1,4 +1,5 @@
 import numpy as np 
+import scipy
 import matplotlib.pyplot as plt
 import numpy.random as random
 import matplotlib.pyplot as plt
@@ -40,13 +41,14 @@ class Log:
 
 
 class Neuron:
-    def __init__(self, N, S, tau_W, beta, gamma=1, n_C=2, n_g=2, alpha=1):
+    def __init__(self, N, S, tau_W, beta, gamma=1, phi=100, n_C=2, n_g=2, alpha=1):
         self.hyper = dict(
             N = N,
             S = S,
             tau_W = tau_W,
             beta = beta,
             gamma = gamma,
+            phi = phi,
             n_C = n_C,
             n_g = n_g,
             alpha = alpha
@@ -54,6 +56,7 @@ class Neuron:
         self.e1 = np.zeros((S, 1))
         self.e1[0,0] = 1
         self.P = self.e1 @ (self.e1.T)
+        self.p = np.reshape(scipy.special.softmax(-phi * np.arange(S)), (S,1))
         self.N = N
         self.S = S
         self.tau_W = tau_W
