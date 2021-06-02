@@ -7,7 +7,7 @@ import matplotlib.cm as cm
 
 
 class Log:
-    def __init__(self, neuron, sigma_s, epsilon, sigma_y, tau_u, tau_y, tau_z, mode, T, dt):
+    def __init__(self, neuron, sigma_s, epsilon, sigma_y, tau_u, tau_y, tau_z, u_mode, y_mode, z_mode, T, dt):
         self.env_parameters = dict(
             sigma_s = sigma_s,
             epsilon = epsilon,
@@ -15,7 +15,9 @@ class Log:
             tau_u = tau_u,
             tau_y = tau_y,
             tau_z = tau_z,
-            mode = mode,
+            u_mode = u_mode,
+            y_mode = y_mode,
+            z_mode = z_mode,
             T = T,
             dt = dt
         )
@@ -26,13 +28,13 @@ class Log:
         self.v = np.zeros(length)
         self.y = np.zeros((length, neuron.N, 1))
         self.z = np.zeros((length, neuron.N, 1))
-        self.orthog = np.zeros((length, neuron.N, 1))
+        # self.orthog = np.zeros((length, neuron.N, 1))
         self.W = np.zeros((length, neuron.S, neuron.N))
         # self.w = np.zeros((length, neuron.N, 1))
         # self.w_norm = np.zeros(length)
         # self.w_para = np.zeros(length)
         # self.w_orthog = np.zeros(length)
-
+        self.po = np.zeros((length, neuron.S, 1))
 
     def __repr__(self):
         return '{}'.format(
@@ -41,7 +43,7 @@ class Log:
 
 
 class Neuron:
-    def __init__(self, N, S, tau_W, beta, gamma=1, phi=100, n_C=2, n_g=2, alpha=1):
+    def __init__(self, N, S, tau_W, beta, gamma=1, phi=100, psi=100, n_C=2, n_g=2, alpha=1):
         self.hyper = dict(
             N = N,
             S = S,
@@ -49,14 +51,17 @@ class Neuron:
             beta = beta,
             gamma = gamma,
             phi = phi,
+            psi = psi,
             n_C = n_C,
             n_g = n_g,
             alpha = alpha
         )
         self.e1 = np.zeros((S, 1))
         self.e1[0,0] = 1
-        self.P = self.e1 @ (self.e1.T)
-        self.p = np.reshape(scipy.special.softmax(-phi * np.arange(S)), (S,1))
+        # self.P = self.e1 @ (self.e1.T)
+        self.po = np.reshape(scipy.special.softmax(-phi * np.arange(S)), (S,1))
+        self.pi = np.reshape(scipy.special.softmax(-psi * np.arange(S)), (S,1))
+        self.P = self.pi @ (self.po.T)
         self.N = N
         self.S = S
         self.tau_W = tau_W
@@ -122,9 +127,13 @@ class Neuron:
             if self.L == np.array([[0]]):
                 chi = 0
             else:
-                chi = 1 / (np.linalg.inv(self.L)[0,0])
+                # chi = 1 / (np.linalg.inv(self.L)[0,0])
+                chi = 1 / (self.po.T @ np.linalg.inv(self.L) @ self.pi).item()
+
         else:
-            chi = 1 / (np.linalg.inv(self.L)[0,0])
+            # chi = 1 / (np.linalg.inv(self.L)[0,0])
+            chi = 1 / (self.po.T @ np.linalg.inv(self.L) @ self.pi).item()
+
 
         eigvals_sys = []
 
@@ -153,7 +162,8 @@ class Neuron:
         w, v = np.linalg.eig(C)
         eigvals_C = np.sort(w)[::-1]
         eigvecs_C = v[:, np.argsort(w)[::-1]]
-        chi = 1 / (np.linalg.inv(self.L)[0,0])
+        # chi = 1 / (np.linalg.inv(self.L)[0,0])
+        chi = 1 / (self.po.T @ np.linalg.inv(self.L) @ self.pi).item()
 
         eigvals_sys = []
         eigvecs_sys = []
